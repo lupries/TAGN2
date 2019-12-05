@@ -40,7 +40,7 @@ class SegDataset(Dataset):
         self.transform = transform
         seq_file = open(root_dir+'db_info.yaml','r')
         sequences = yaml.load(seq_file)['sequences']
-        self.sequences = [seq['name'] for seq in sequences if seq['year']==2016]
+        self.sequences = [seq['name'] for seq in sequences if (seq['year']==2016 and subset == seq['set'])]
         print(self.sequences)
         self.image_names = []
         self.mask_names = []

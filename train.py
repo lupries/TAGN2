@@ -36,7 +36,7 @@ def train_model(model, criterion, dataloader, optimizer, metrics, num_epochs=1):
         with torch.set_grad_enabled(phase == 'Train'):
           outputs = model(inputs)
           loss = criterion(outputs['out'], masks)
-          y_pred = 1.0/(1-np.exp(-outputs['out'].data.cpu().numpy().ravel()))
+          y_pred = 1.0/(1+np.exp(-outputs['out'].data.cpu().numpy().ravel()))
           y_true = masks.data.cpu().numpy().ravel()
           for name, metric in metrics.items():
             if name == 'f1_score':
