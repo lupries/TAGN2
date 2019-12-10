@@ -84,7 +84,7 @@ def show_results(model, dataloader, number):
         image = images[i]
         mask_pred = y_pred[i][0]
         mask = y_true[i][0]
-        print(np.max(mask_pred), np.min(mask_pred))
+        print(np.max(image[1,:,:]), np.min(mask_pred))
         print(np.max(mask), np.min(mask))
         print(image.shape,mask_pred.shape,mask.shape)
         plt.subplot(3,1,1)
@@ -94,6 +94,41 @@ def show_results(model, dataloader, number):
         plt.imshow(mask_pred>0.5)
         plt.subplot(3,1,3)
         plt.imshow(mask>0)
+        plt.show(block=True)
+      counter += 1
+      if counter >= max_count:
+        return
+
+def show_results_img(model, dataloader, number):
+  model.eval()
+  device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+  counter = 0
+  max_count = int(number/dataloader.batch_size)
+  for sample in dataloader:
+    inputs = sample['image'].to(device)
+    masks = sample['mask'].to(device)
+    with torch.set_grad_enabled(False):
+      outputs = model(inputs)
+      y_pred = outputs['out'].data.cpu().numpy()
+      y_true = masks.data.cpu().numpy()
+      images = inputs.cpu().numpy()
+      for i in range(dataloader.batch_size):
+        image = images[i]
+        mask_pred = y_pred[i][0]
+        mask = y_true[i][:]
+        mask = np.squeeze(np.sum(mask, axis=0))
+        gt_img = image + np.asarray([mask, -mask, -mask],dtype=float)*0.3
+        image += np.asarray([1/(1+np.exp(-mask_pred))>0.5, -1*(1/(1+np.exp(-mask_pred))>0.5), -1*(1/(1+np.exp(-mask_pred))>0.5)],dtype=float)*0.2
+        #print(np.max(image[0,:,:]), np.min(mask_pred))
+        #print(np.max(mask), np.min(mask))
+        print(image.shape,mask_pred.shape,mask.shape)
+        plt.subplot(2,1,1)
+        plt.imshow(image.transpose(1,2,0))
+        plt.subplot(2,1,2)
+        #mask_pred = 1.0/(1+np.exp(-mask_pred))
+        plt.imshow(gt_img.transpose(1,2,0))
+        #plt.subplot(3,1,3)
+        #plt.imshow(mask>0)
         plt.show(block=True)
       counter += 1
       if counter >= max_count:
