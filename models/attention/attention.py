@@ -92,7 +92,7 @@ class GAP(nn.Module):
         calculates sigmoid(AvgPool(W_g conv x + b_g))
 
         :param x: input message m_ji of size W x H x C
-        :return: confidence g_ji with channel wise responses [0,1]^C
+        :return: confidence g_ji with channel wise responses [0,1]xC
         """
 
         x = self.W_g(x)
