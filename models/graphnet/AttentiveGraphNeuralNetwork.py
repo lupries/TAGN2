@@ -19,6 +19,8 @@ class AGNN(MessagePassing):
         self.loops = loops
         if edge_index is None:
           edge_index = create_fully_connected()
+          if torch.cuda.is_available():
+            edge_index = edge_index.cuda()
         self.edge_index = edge_index
         # Attention Modules
         self.intraAttention = SelfAttention(channels)
