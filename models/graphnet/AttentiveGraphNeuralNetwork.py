@@ -6,7 +6,7 @@ import numpy as np
 from ..convgru import ConvGRU
 from ..attention import SelfAttention, InterAttention, GAP
 
-class AttentiveGraphNeuralNetwork(MessagePassing):
+class AGNN(MessagePassing):
     """
     Graph Neural Network with Attention Modules for Message Passing and Convolutional GRU for Node Update
 
@@ -15,7 +15,7 @@ class AttentiveGraphNeuralNetwork(MessagePassing):
     """
 
     def __init__(self, loops, channels, size, edge_index=None):
-        super(AttentiveGraphNeuralNetwork, self).__init__(aggr='add')
+        super(AGNN, self).__init__(aggr='add')
         self.loops = loops
         if edge_index is None:
           edge_index = create_fully_connected()
