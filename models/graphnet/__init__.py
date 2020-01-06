@@ -1,1 +1,1 @@
-from AttentiveGraphNeuralNetwork import AGNN
+from .AttentiveGraphNeuralNetwork import AGNN
