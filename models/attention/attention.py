@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 class SelfAttention(nn.Module):
 
     """
@@ -69,12 +68,13 @@ class InterAttention(nn.Module):
         :return: message m_ij of form (WH) x C (needs to be reshaped to tensor W x H x C in main class)
         """
         batch, _, height, width = node1.size()
-
-        x = self.W_c(node1.view(batch, -1, width*height))
-        x = torch.bmm(x.permute(0, 2, 1), node2.view(batch, -1, width*height))
-        x = torch.bmm(node2.view(batch, -1, width*height), self.activation(x))
-
-        return x
+        
+        node1_flat = node1.view(batch, -1, width*height).permute(0,2,1)
+        node2_flat = node2.view(batch, -1, width*height)
+        x = self.W_c(node1_flat)
+        x = torch.bmm(x, node2_flat)
+        x = torch.bmm(node2_flat,self.activation(x).permute(0,2,1))
+        return x.view(batch, -1, height, width)
 
 
 class GAP(nn.Module):
@@ -92,7 +92,7 @@ class GAP(nn.Module):
         calculates sigmoid(AvgPool(W_g conv x + b_g))
 
         :param x: input message m_ji of size W x H x C
-        :return: confidence g_ji with channel wise responses [0,1]^C
+        :return: confidence g_ji with channel wise responses [0,1]xC
         """
 
         x = self.W_g(x)
