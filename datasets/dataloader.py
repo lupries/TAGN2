@@ -1,7 +1,7 @@
 import glob
 import yaml
 import os
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, SequentialSampler
 import cv2
 import torch
 from torchvision import transforms, utils
@@ -157,8 +157,12 @@ class Normalize(object):
 
 
 def create_dataloader(data_dir, imageFolder, maskFolder, size = (256,256), fraction=None, subset='train', batch_size=4):
-  data_transforms = transforms.Compose([Resize(size, size), ToTensor(), Normalize()])
+
+    data_transforms = transforms.Compose([Resize(size, size), ToTensor(), Normalize()])
   
-  image_dataset = SegDataset(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset)
-  dataloader = DataLoader(image_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
-  return dataloader
+    image_dataset = SegDataset(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset)
+    sampler = SequentialSampler(image_dataset)
+    dataloader = DataLoader(image_dataset, sampler=sampler, batch_size=batch_size, num_workers=8)
+
+    return dataloader
+
