@@ -79,11 +79,11 @@ class InterAttention(nn.Module):
 
 class GAP(nn.Module):
 
-    def __init__(self, input_channels, output_channels, pooling_kernel):
+    def __init__(self, input_channels, output_channels):
         super(GAP, self).__init__()
 
         self.W_g = nn.Conv2d(input_channels, output_channels, kernel_size=1, stride=1, bias=True)
-        self.pooling = nn.AvgPool2d(pooling_kernel)
+        self.pooling = nn.AdaptiveAvgPool2d(1)
         self.activation = nn.Sigmoid()
 
     def forward(self, x):

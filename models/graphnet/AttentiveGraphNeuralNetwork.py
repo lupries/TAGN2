@@ -14,7 +14,7 @@ class AGNN(MessagePassing):
 
     """
 
-    def __init__(self, loops, channels, size, edge_index=None):
+    def __init__(self, loops, channels, edge_index=None):
         super(AGNN, self).__init__(aggr='add')
         self.loops = loops
         if edge_index is None:
@@ -25,7 +25,7 @@ class AGNN(MessagePassing):
         # Attention Modules
         self.intraAttention = SelfAttention(channels)
         self.interAttention = InterAttention(channels, channels)
-        self.gate           = GAP(channels, channels, size)
+        self.gate           = GAP(channels, channels)
         # Convolutional Gated Recurrent Unit
         self.convGRU        = ConvGRU(channels, channels, 3, 1)
         self.hidden         = None
