@@ -6,12 +6,12 @@ from .graphnet import AGNN
 
 class TAGNN(nn.Module):
 
-    def __init__(self, loops):
+    def __init__(self, loops, num_nodes):
         super(TAGNN, self).__init__()
 
         deeplab = models.segmentation.deeplabv3_resnet50(pretrained=False)
         self.backbone = deeplab.backbone
-        self.graph = AGNN(loops=loops, channels=2048)
+        self.graph = AGNN(loops=loops, channels=2048, num_nodes=num_nodes)
         self.readout = models.segmentation.deeplabv3.DeepLabHead(2048, num_classes=1)
 
     def forward(self, x):

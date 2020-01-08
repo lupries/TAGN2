@@ -14,11 +14,11 @@ class AGNN(MessagePassing):
 
     """
 
-    def __init__(self, loops, channels, edge_index=None):
+    def __init__(self, loops, channels, num_nodes, edge_index=None):
         super(AGNN, self).__init__(aggr='add')
         self.loops = loops
         if edge_index is None:
-          edge_index = create_fully_connected()
+          edge_index = create_fully_connected(num_nodes)
           if torch.cuda.is_available():
             edge_index = edge_index.cuda()
         self.edge_index = edge_index
