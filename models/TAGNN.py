@@ -16,6 +16,10 @@ class TAGNN(nn.Module):
 
     def forward(self, x):
 
+        # reset hidden state for Gated Recurrent Units in Graph Update function
+        if self.graph.hidden is not None:
+            self.graph.hidden = None
+
         input_shape = x.shape[-2:]
         features = self.backbone(x)
         x = features['out']
