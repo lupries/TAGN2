@@ -61,6 +61,7 @@ class SegDataset(Dataset):
                     counter += 1
                 elif elem + counter * step < len(image_names):
                     image_names.insert(elem, image_names.pop(elem + counter * step))
+                    mask_names.insert(elem, mask_names.pop(elem + counter * step))
                     counter += 1
                     if counter == batch_size:
                         counter = 0
