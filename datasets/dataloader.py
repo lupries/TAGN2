@@ -10,7 +10,7 @@ import numpy as np
 class SegDataset(Dataset):
     """Segmentation Dataset"""
 
-    def __init__(self, root_dir, imageFolder, maskFolder, transform=None, seed=None, fraction=None, subset=None, imagecolormode='rgb', maskcolormode='grayscale'):
+    def __init__(self, root_dir, imageFolder, maskFolder, transform=None, seed=None, fraction=None, subset=None, imagecolormode='rgb', maskcolormode='grayscale', batch_size=3, step=5):
         """
         Args:
             root_dir (string): Directory with all the images and should have the following structure.
@@ -55,6 +55,15 @@ class SegDataset(Dataset):
               mask = mask_names[0]
               mask_names = [mask for i in range(len(image_names))]
               print(mask_names)
+            counter = 0
+            for elem in range(len(image_names)):
+                if counter == 0:
+                    counter += 1
+                elif elem + counter * step < len(image_names):
+                    image_names.insert(elem, image_names.pop(elem + counter * step))
+                    counter += 1
+                    if counter == batch_size:
+                        counter = 0
             self.image_names += image_names
             self.mask_names += mask_names
         else:
