@@ -176,11 +176,11 @@ class Normalize(object):
                 'mask': mask.type(torch.FloatTensor)}
 
 
-def create_dataloader(data_dir, imageFolder, maskFolder, size = (256,256), fraction=None, subset='train', batch_size=4):
+def create_dataloader(data_dir, imageFolder, maskFolder, size = (256,256), fraction=None, subset='train', batch_size=4, step=5):
 
     data_transforms = transforms.Compose([Resize(size, size), ToTensor(), Normalize()])
 
-    image_dataset = SegDataset(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset)
+    image_dataset = SegDataset(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset, batch_size=batch_size, step=step)
     sampler = SequentialSampler(image_dataset)
     dataloader = DataLoader(image_dataset, sampler=sampler, batch_size=batch_size, num_workers=8)
 
