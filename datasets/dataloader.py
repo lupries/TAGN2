@@ -45,39 +45,50 @@ class SegDataset(Dataset):
         self.image_names = []
         self.mask_names = []
         if not fraction:
-          for seq in self.sequences: 
-            image_names = sorted(
-                glob.glob(os.path.join(self.root_dir, imageFolder, seq, '*')))
-            mask_names = sorted(
-                glob.glob(os.path.join(self.root_dir, maskFolder, seq, '*')))
-            if len(mask_names)<len(image_names):
-              print(mask_names)
-              mask = mask_names[0]
-              mask_names = [mask for i in range(len(image_names))]
-              print(mask_names)
+            for seq in self.sequences:
+                image_names = sorted(
+                    glob.glob(os.path.join(self.root_dir, imageFolder, seq, '*')))
+                mask_names = sorted(
+                    glob.glob(os.path.join(self.root_dir, maskFolder, seq, '*')))
+                if len(mask_names)<len(image_names):
+                    print(mask_names)
+                    mask = mask_names[0]
+                    mask_names = [mask for i in range(len(image_names))]
+                    print(mask_names)
+                new_image_names = []
+                new_mask_names = []
+                for elem in range(len(image_names)):
+                    if elem + step * (batch_size-1) < len(image_names):
+                        for frame in range(batch_size):
+                            new_image_names.append(image_names[elem + frame * step])
+                            new_mask_names.append(mask_names[elem + frame * step])
+                    else:
+                        break
+                self.image_names += new_image_names
+                self.mask_names += new_mask_names
             new_image_names = []
             new_mask_names = []
-            for elem in range(len(image_names)):
-              if elem + step * (batch_size-1) < len(image_names):
-                for frame in range(batch_size):
-                    new_image_names.append(image_names[elem + frame * step])
-                    new_mask_names.append(mask_names[elem + frame * step])
-              else:
-                break
-            self.image_names += new_image_names
-            self.mask_names += new_mask_names
+            indices = np.arange(0, len(self.image_names), batch_size)
+            np.random.shuffle(indices)
+            for elem in indices:
+                for i in range(0, batch_size):
+                    if elem + i < len(self.image_names):
+                        new_image_names.append(self.image_names[elem + i])
+                        new_mask_names.append(self.mask_names[elem + i])
+            self.image_names = new_image_names
+            self.mask_names = new_mask_names
         else:
             assert(subset in ['Train', 'Test'])
             self.fraction = fraction
             self.image_list = []
             self.mask_list = []
             for seq in self.sequences:
-              image_list = np.array(
-                  sorted(glob.glob(os.path.join(self.root_dir, imageFolder, seq, '*'))))
-              mask_list = np.array(
-                  sorted(glob.glob(os.path.join(self.root_dir, maskFolder, seq, '*'))))
-              self.image_list += image_list
-              self.mask_list += mask_list
+                image_list = np.array(
+                    sorted(glob.glob(os.path.join(self.root_dir, imageFolder, seq, '*'))))
+                mask_list = np.array(
+                    sorted(glob.glob(os.path.join(self.root_dir, maskFolder, seq, '*'))))
+                self.image_list += image_list
+                self.mask_list += mask_list
             if seed:
                 np.random.seed(seed)
                 indices = np.arange(len(self.image_list))
@@ -168,7 +179,7 @@ class Normalize(object):
 def create_dataloader(data_dir, imageFolder, maskFolder, size = (256,256), fraction=None, subset='train', batch_size=4):
 
     data_transforms = transforms.Compose([Resize(size, size), ToTensor(), Normalize()])
-  
+
     image_dataset = SegDataset(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset)
     sampler = SequentialSampler(image_dataset)
     dataloader = DataLoader(image_dataset, sampler=sampler, batch_size=batch_size, num_workers=8)
