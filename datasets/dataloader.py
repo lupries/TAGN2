@@ -55,18 +55,17 @@ class SegDataset(Dataset):
               mask = mask_names[0]
               mask_names = [mask for i in range(len(image_names))]
               print(mask_names)
-            counter = 0
+            new_image_names = []
+            new_mask_names = []
             for elem in range(len(image_names)):
-                if counter == 0:
-                    counter += 1
-                elif elem + counter * step < len(image_names):
-                    image_names.insert(elem, image_names.pop(elem + counter * step))
-                    mask_names.insert(elem, mask_names.pop(elem + counter * step))
-                    counter += 1
-                    if counter == batch_size:
-                        counter = 0
-            self.image_names += image_names
-            self.mask_names += mask_names
+              if elem + step * (batch_size-1) < len(image_names):
+                for frame in range(batch_size):
+                    new_image_names.append(image_names[elem + frame * step])
+                    new_mask_names.append(mask_names[elem + frame * step])
+              else:
+                break
+            self.image_names += new_image_names
+            self.mask_names += new_mask_names
         else:
             assert(subset in ['Train', 'Test'])
             self.fraction = fraction
