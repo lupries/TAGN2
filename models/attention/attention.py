@@ -17,7 +17,7 @@ class SelfAttention(nn.Module):
         self.W_h = nn.Conv2d(input_channels, input_channels//4, kernel_size=1, stride=1)
         self.activation = nn.Softmax(dim=-1)
         self.W_l = nn.Conv2d(input_channels, input_channels, kernel_size=1, stride=1)
-        self.alpha = nn.Parameter(torch.rand(1))
+        self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
 
@@ -37,7 +37,7 @@ class SelfAttention(nn.Module):
         x3 = self.W_l(x).view(batch, -1, width*height)
         t = torch.bmm(x3, t.permute(0, 2, 1))
         t = t.view(batch, channels, height, width)
-        t = t * self.alpha.expand_as(t) + x
+        t = t * self.alpha + x
 
         return t
 
