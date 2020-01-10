@@ -3,7 +3,7 @@ from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
 import numpy as np
 
-from ..convgru import ConvGRU
+from ..convgru import ConvGRU, ConvGRUCell
 from ..attention import SelfAttention, InterAttention, GAP
 
 class AGNN(MessagePassing):
@@ -27,7 +27,7 @@ class AGNN(MessagePassing):
         self.interAttention = InterAttention(channels, channels)
         self.gate           = GAP(channels, channels)
         # Convolutional Gated Recurrent Unit
-        self.convGRU        = ConvGRU(channels, channels, 3, 1)
+        self.convGRU        = ConvGRUCell(channels, channels, 3)
         self.hidden         = None
 
     def forward(self, x):
@@ -62,7 +62,7 @@ class AGNN(MessagePassing):
         # aggr_out has shape [N, C, H, W]
         self.hidden = self.convGRU.forward(aggr_out, self.hidden)
         # Return new node embeddings.
-        return self.hidden[0]
+        return self.hidden
 
     
 def create_fully_connected(num_nodes=3):

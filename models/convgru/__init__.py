@@ -1,1 +1,1 @@
-from .convgru import ConvGRU
+from .convgru import ConvGRU, ConvGRUCell

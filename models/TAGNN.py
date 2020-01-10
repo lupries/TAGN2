@@ -42,7 +42,7 @@ class TAGNN_batch(nn.Module):
           new_edge_index = torch.cat((new_edge_index,edge_index + torch.ones_like(edge_index) * i * frames),dim=1)
         deeplab = models.segmentation.deeplabv3_resnet50(pretrained=False)
         self.backbone = deeplab.backbone
-        self.graph = AGNN(loops=loops, channels=2048, num_nodes=frames, edge_index=new_edge_index.cuda)
+        self.graph = AGNN(loops=loops, channels=2048, num_nodes=frames, edge_index=new_edge_index.cuda())
         self.readout = models.segmentation.deeplabv3.DeepLabHead(2048, num_classes=1)
 
     def forward(self, x):
