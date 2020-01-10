@@ -52,8 +52,8 @@ class Resize(object):
             images = images.transpose(0, 2, 3, 1)
         if len(masks.shape) == 4:
             masks = masks.transpose(0, 2, 3, 1)
-        new_masks = np.zeros((masks.shape[0], self.maskresize[0], self.maskresize[1]))
-        new_images = np.zeros((images.shape[0], self.imageresize[0], self.imageresize[1], images.shape[3]))
+        new_masks = np.zeros((masks.shape[0], self.maskresize[1], self.maskresize[0]))
+        new_images = np.zeros((images.shape[0], self.imageresize[1], self.imageresize[0], images.shape[3]))
         for i in range(images.shape[0]):
           new_masks[i] = cv2.resize(masks[i], self.maskresize, cv2.INTER_AREA)
           new_images[i] = cv2.resize(images[i], self.imageresize, cv2.INTER_AREA)
