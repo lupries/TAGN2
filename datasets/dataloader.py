@@ -38,6 +38,7 @@ class SegDataset(Dataset):
         self.maskcolorflag = self.color_dict[maskcolormode]
         self.root_dir = root_dir
         self.transform = transform
+        self.batch_size = batch_size
         seq_file = open(root_dir+'db_info.yaml','r')
         sequences = yaml.load(seq_file)['sequences']
         self.sequences = [seq['name'] for seq in sequences if (seq['year']==2016 and subset == seq['set'])]
