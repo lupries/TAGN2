@@ -70,13 +70,13 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample, maskresize=None, imageresize=None):
-        images, masks = sample['image'], sample['mask']
-        if len(masks.shape) == 3:
-            masks = mask.reshape(masks.shape[0]+(1,)+masks.shape[1:])
-        if len(images.shape) === 2:
-            images = images.reshape(images.shape[0]+(1,)+images.shape[1:])
-        return {'image': torch.from_numpy(images),
-                'mask': torch.from_numpy(masks)}
+        image, mask = sample['image'], sample['mask']
+        if len(mask.shape) == 2:
+            mask = mask.reshape((1,)+mask.shape)
+        if len(image.shape) == 2:
+            image = image.reshape((1,)+image.shape)
+        return {'image': torch.from_numpy(image),
+                'mask': torch.from_numpy(mask)}
 
 
 class Normalize(object):
