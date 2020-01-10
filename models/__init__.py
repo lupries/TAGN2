@@ -1,1 +1,1 @@
-from .TAGNN import TAGNN
+from .TAGNN import TAGNN, TAGNN_batch
