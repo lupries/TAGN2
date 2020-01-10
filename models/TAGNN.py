@@ -43,13 +43,9 @@ class TAGNN_batch(nn.Module):
         deeplab = models.segmentation.deeplabv3_resnet50(pretrained=False)
         self.backbone = deeplab.backbone
         self.graph = AGNN(loops=loops, channels=2048, num_nodes=frames, edge_index=new_edge_index.cuda())
-        self.readout = models.segmentation.deeplabv3.DeepLabHead(2048, num_classes=1)
+        self.readout = models.segmentation.deeplabv3.DeepLabHead(2*2048, num_classes=1)
 
     def forward(self, x):
-
-        # reset hidden state for Gated Recurrent Units in Graph Update function
-        if self.graph.hidden is not None:
-            self.graph.hidden = None
 
         input_shape = x.shape[-2:]
         
@@ -62,12 +58,13 @@ class TAGNN_batch(nn.Module):
           features = torch.cat((features, frame_feature),dim=1)
         batch, frames, channel, height, width = features.shape
         x = features.view(-1, channel, height, width)
-
+        self.graph.hidden = x
         # graphnet (attention mechanism)
         x = self.graph(x)
         x = x.view(features.shape)
         
         # readout (pixelwise classification)
+        x = torch.cat((x,features),dim=2)
         out = torch.Tensor().cuda()
         for frame in range(frames):
           frame_out = self.readout(x[:,frame])
