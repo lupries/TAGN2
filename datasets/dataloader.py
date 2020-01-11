@@ -131,6 +131,110 @@ class SegDataset(Dataset):
         return sample
 
 
+class SegDataset_Baseline(Dataset):
+    """Segmentation Dataset"""
+
+    def __init__(self, root_dir, imageFolder, maskFolder, transform=None, seed=None, fraction=None, subset=None, imagecolormode='rgb', maskcolormode='grayscale'):
+        """
+        Args:
+            root_dir (string): Directory with all the images and should have the following structure.
+            root
+            --Images
+            -----Img 1
+            -----Img N
+            --Mask
+            -----Mask 1
+            -----Mask N
+            imageFolder (string) = 'Images' : Name of the folder which contains the Images.
+            maskFolder (string)  = 'Masks : Name of the folder which contains the Masks.
+            transform (callable, optional): Optional transform to be applied on a sample.
+            seed: Specify a seed for the train and test split
+            fraction: A float value from 0 to 1 which specifies the validation split fraction
+            subset: 'Train' or 'Test' to select the appropriate set.
+            imagecolormode: 'rgb' or 'grayscale'
+            maskcolormode: 'rgb' or 'grayscale'
+        """
+        self.color_dict = {'rgb': 1, 'grayscale': 0}
+        assert(imagecolormode in ['rgb', 'grayscale'])
+        assert(maskcolormode in ['rgb', 'grayscale'])
+
+        self.imagecolorflag = self.color_dict[imagecolormode]
+        self.maskcolorflag = self.color_dict[maskcolormode]
+        self.root_dir = root_dir
+        self.transform = transform
+        seq_file = open(root_dir+'db_info.yaml','r')
+        sequences = yaml.load(seq_file)['sequences']
+        self.sequences = [seq['name'] for seq in sequences if (seq['year']==2016 and subset == seq['set'])]
+        print(self.sequences)
+        self.image_names = []
+        self.mask_names = []
+        if not fraction:
+            for seq in self.sequences:
+                image_names = sorted(
+                    glob.glob(os.path.join(self.root_dir, imageFolder, seq, '*')))
+                mask_names = sorted(
+                    glob.glob(os.path.join(self.root_dir, maskFolder, seq, '*')))
+                if len(mask_names)<len(image_names):
+                    print(mask_names)
+                    mask = mask_names[0]
+                    mask_names = [mask for i in range(len(image_names))]
+                    print(mask_names)
+                self.image_names += image_names
+                self.mask_names += mask_names
+        else:
+            assert(subset in ['Train', 'Test'])
+            self.fraction = fraction
+            self.image_list = []
+            self.mask_list = []
+            for seq in self.sequences:
+                image_list = np.array(
+                    sorted(glob.glob(os.path.join(self.root_dir, imageFolder, seq, '*'))))
+                mask_list = np.array(
+                    sorted(glob.glob(os.path.join(self.root_dir, maskFolder, seq, '*'))))
+                self.image_list += image_list
+                self.mask_list += mask_list
+            if seed:
+                np.random.seed(seed)
+                indices = np.arange(len(self.image_list))
+                np.random.shuffle(indices)
+                self.image_list = self.image_list[indices]
+                self.mask_list = self.mask_list[indices]
+            if subset == 'Train':
+                self.image_names = self.image_list[:int(
+                    np.ceil(len(self.image_list)*(1-self.fraction)))]
+                self.mask_names = self.mask_list[:int(
+                    np.ceil(len(self.mask_list)*(1-self.fraction)))]
+            else:
+                self.image_names = self.image_list[int(
+                    np.ceil(len(self.image_list)*(1-self.fraction))):]
+                self.mask_names = self.mask_list[int(
+                    np.ceil(len(self.mask_list)*(1-self.fraction))):]
+
+    def __len__(self):
+        return len(self.image_names)
+
+    def __getitem__(self, idx):
+        img_name = self.image_names[idx]
+        if self.imagecolorflag:
+            image = cv2.imread(
+                img_name, self.imagecolorflag).transpose(2, 0, 1)
+        else:
+            image = cv2.imread(img_name, self.imagecolorflag)
+        msk_name = self.mask_names[idx]
+        if self.maskcolorflag:
+            mask = cv2.imread(msk_name, self.maskcolorflag).transpose(2, 0, 1)
+        else:
+            mask = cv2.imread(msk_name, self.maskcolorflag)
+        mask = np.asarray(mask>0).astype(float)
+        sample = {'image': image, 'mask': mask}
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample
+
+
+
 class Resize(object):
     """Resize image and/or masks."""
 
@@ -177,13 +281,18 @@ class Normalize(object):
                 'mask': mask.type(torch.FloatTensor)}
 
 
-def create_dataloader(data_dir, imageFolder, maskFolder, size = (256,256), fraction=None, subset='train', batch_size=4, step=5):
+
+def create_dataloader(data_dir, imageFolder, maskFolder, size = (256,256), fraction=None, subset='train', baseline=False, batch_size=4, step=5):
 
     data_transforms = transforms.Compose([Resize(size, size), ToTensor(), Normalize()])
 
-    image_dataset = SegDataset(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset, batch_size=batch_size, step=step)
-    sampler = SequentialSampler(image_dataset)
-    dataloader = DataLoader(image_dataset, sampler=sampler, batch_size=batch_size, num_workers=8)
+    if baseline:
+        image_dataset = SegDataset_Baseline(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset)
+        dataloader = DataLoader(image_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
+    else:
+        image_dataset = SegDataset(data_dir, transform=data_transforms, imageFolder=imageFolder, maskFolder=maskFolder, subset=subset, batch_size=batch_size, step=step)
+        sampler = SequentialSampler(image_dataset)
+        dataloader = DataLoader(image_dataset, sampler=sampler, batch_size=batch_size, num_workers=8)
 
     return dataloader
 
