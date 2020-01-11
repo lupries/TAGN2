@@ -33,16 +33,22 @@ class TAGNN(nn.Module):
 
 class TAGNN_batch(nn.Module):
 
-    def __init__(self, loops, frames, batch_size):
+    def __init__(self, loops, frames, batch_size, backbone=None):
         super(TAGNN_batch, self).__init__()
 
         edge_index = create_fully_connected(frames)
         new_edge_index = edge_index
         for i in range(1,batch_size):
           new_edge_index = torch.cat((new_edge_index,edge_index + torch.ones_like(edge_index) * i * frames),dim=1)
-        deeplab = models.segmentation.deeplabv3_resnet50(pretrained=False)
-        self.backbone = deeplab.backbone
-        self.deeplabhead = models.segmentation.deeplabv3.DeepLabHead(2048, num_classes=1)
+        
+        if backbone is not None:
+            deeplab = backbone
+        else:
+            deeplab = models.segmentation.deeplabv3_resnet50(pretrained=False)
+            deeplab.classifier = models.segmentation.deeplabv3.DeepLabHead(2048, num_classes=1)
+        
+        self.backbone       = deeplab.backbone
+        self.deeplabhead    = deeplab.classifier
         self.ASPP     = nn.Sequential(
             self.deeplabhead[0],
             self.deeplabhead[1],
