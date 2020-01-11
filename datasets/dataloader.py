@@ -67,17 +67,18 @@ class SegDataset(Dataset):
                         break
                 self.image_names += new_image_names
                 self.mask_names += new_mask_names
-            new_image_names = []
-            new_mask_names = []
-            indices = np.arange(0, len(self.image_names), batch_size)
-            np.random.shuffle(indices)
-            for elem in indices:
-                for i in range(0, batch_size):
-                    if elem + i < len(self.image_names):
-                        new_image_names.append(self.image_names[elem + i])
-                        new_mask_names.append(self.mask_names[elem + i])
-            self.image_names = new_image_names
-            self.mask_names = new_mask_names
+            if subset is not 'val':
+                new_image_names = []
+                new_mask_names = []
+                indices = np.arange(0, len(self.image_names), batch_size)
+                np.random.shuffle(indices)
+                for elem in indices:
+                    for i in range(0, batch_size):
+                        if elem + i < len(self.image_names):
+                            new_image_names.append(self.image_names[elem + i])
+                            new_mask_names.append(self.mask_names[elem + i])
+                self.image_names = new_image_names
+                self.mask_names = new_mask_names
         else:
             assert(subset in ['Train', 'Test'])
             self.fraction = fraction
