@@ -47,8 +47,8 @@ class TAGNN_batch(nn.Module):
             deeplab = models.segmentation.deeplabv3_resnet50(pretrained=False)
             deeplab.classifier = models.segmentation.deeplabv3.DeepLabHead(2048, num_classes=1)
         
-        self.backbone       = deeplab.backbone
-        self.deeplabhead    = deeplab.classifier
+        self.backbone = deeplab.backbone
+        self.deeplabhead = deeplab.classifier
         self.ASPP     = nn.Sequential(
             self.deeplabhead[0],
             self.deeplabhead[1],
@@ -62,33 +62,50 @@ class TAGNN_batch(nn.Module):
             nn.ReLU(inplace=True),
             self.deeplabhead[4]
         )
+        self.node_states = []
 
     def forward(self, x):
 
         input_shape = x.shape[-2:]
+        frames = x.shape[1]
         
         # backbone (feature extraction)
-        features = torch.Tensor().cuda()
-        frames = x.shape[1]
-        for frame in range(frames):
-          frame_feature = self.backbone(x[:,frame])['out']
-          frame_feature = self.ASPP(frame_feature)
-          frame_feature = frame_feature.unsqueeze(1)
-          features = torch.cat((features, frame_feature),dim=1)
+        features = self.encode(x,frames)
+        
+        # flatten batches for graph
         batch, frames, channel, height, width = features.shape
         x = features.view(-1, channel, height, width)
+        
+        # set node states
+        self.node_states.append(self.readout(features,features,input_shape,frames))
         self.graph.hidden = x
+        
         # graphnet (attention mechanism)
         x = self.graph(x)
         x = x.view(features.shape)
         
         # readout (pixelwise classification)
-        x = torch.cat((x,features),dim=2)
+        out = self.readout(x, features, input_shape, frames)
+
+        return out
+
+    def encode(self, x, frames):
+        
+        features = torch.Tensor().cuda()
+        for frame in range(frames):
+          frame_feature = self.backbone(x[:,frame])['out']
+          frame_feature = self.ASPP(frame_feature)
+          frame_feature = frame_feature.unsqueeze(1)
+          features = torch.cat((features, frame_feature),dim=1)
+        return features
+        
+    def readout(self, x, res_x, input_shape, frames):
+
+        x = torch.cat((x,res_x),dim=2)
         out = torch.Tensor().cuda()
         for frame in range(frames):
           frame_out = self.classifier(x[:,frame])
           frame_out = F.interpolate(frame_out, size=input_shape, mode='bilinear', align_corners=False)
           out = torch.cat((out,frame_out),dim=1)
-
         return out
 
