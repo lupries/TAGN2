@@ -33,7 +33,7 @@ class AGNN(MessagePassing):
 
     def forward(self, x):
         # x has shape [N, W, H, C]
-
+        self.hidden_states = []
         # Propagate messages
         for itr in range(self.loops):
             x = self.propagate(edge_index=self.edge_index, x=x)

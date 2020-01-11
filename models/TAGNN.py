@@ -83,6 +83,7 @@ class TAGNN_batch(nn.Module):
         x = self.graph(x)
 
         # list intermediate node states and pass through readout
+        self.node_states = []
         for state in self.graph.hidden_states:
             self.node_states.append(self.readout(state.view(features.shape),features,input_shape,frames))
         # reshape (unflatten batches)
