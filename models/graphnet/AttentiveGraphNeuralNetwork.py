@@ -29,6 +29,7 @@ class AGNN(MessagePassing):
         # Convolutional Gated Recurrent Unit
         self.convGRU        = ConvGRUCell(channels, channels, 3)
         self.hidden         = None
+        self.hidden_states  = []
 
     def forward(self, x):
         # x has shape [N, W, H, C]
@@ -49,7 +50,7 @@ class AGNN(MessagePassing):
         
         msg = torch.zeros_like(x_i)
         # Intra-Attention messages
-        msg[mask_selfAtt]         = self.intraAttention.forward(x_i_selfAtt)
+        msg[mask_selfAtt]         = self.intraAttention.forward(x_i_selfAtt) - x_i_selfAtt
         # Inter-Attention messages
         msg[mask_selfAtt==False]  = self.interAttention.forward(x_i_interAtt, x_j_interAtt)
         # Gate
@@ -60,6 +61,7 @@ class AGNN(MessagePassing):
 
     def update(self, aggr_out):
         # aggr_out has shape [N, C, H, W]
+        self.hidden_states.append(self.hidden)
         self.hidden = self.convGRU.forward(aggr_out, self.hidden)
         # Return new node embeddings.
         return self.hidden

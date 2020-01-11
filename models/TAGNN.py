@@ -77,11 +77,15 @@ class TAGNN_batch(nn.Module):
         x = features.view(-1, channel, height, width)
         
         # set node states
-        self.node_states.append(self.readout(features,features,input_shape,frames))
         self.graph.hidden = x
         
         # graphnet (attention mechanism)
         x = self.graph(x)
+
+        # list intermediate node states and pass through readout
+        for state in self.graph.hidden_states:
+            self.node_states.append(self.readout(state.view(features.shape),features,input_shape,frames))
+        # reshape (unflatten batches)
         x = x.view(features.shape)
         
         # readout (pixelwise classification)
