@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
 import numpy as np
@@ -25,7 +26,11 @@ class AGNN(MessagePassing):
         # Attention Modules
         self.intraAttention = SelfAttention(channels)
         self.interAttention = InterAttention(channels, channels)
-        self.gate           = GAP(channels, channels)
+        self.gate           = nn.Sequential(
+            nn.Conv2d(256, 1, kernel_size=1, bias=False),
+            nn.Sigmoid()
+        )
+        #GAP(channels, channels)
         # Convolutional Gated Recurrent Unit
         self.convGRU        = ConvGRUCell(channels, channels, 3)
         self.hidden         = None
@@ -50,12 +55,12 @@ class AGNN(MessagePassing):
         
         msg = torch.zeros_like(x_i)
         # Intra-Attention messages
-        msg[mask_selfAtt]         = self.intraAttention.forward(x_i_selfAtt) - x_i_selfAtt
+        msg[mask_selfAtt]         = self.intraAttention(x_i_selfAtt) - x_i_selfAtt
         # Inter-Attention messages
-        msg[mask_selfAtt==False]  = self.interAttention.forward(x_i_interAtt, x_j_interAtt)
+        msg[mask_selfAtt==False]  = self.interAttention(x_i_interAtt, x_j_interAtt)
         # Gate
-        gate_multiplier = self.gate.forward(msg)[:,:,0,0]
-        msg = (gate_multiplier.T * msg.T).T
+        gate_multiplier = self.gate(msg)
+        msg = msg * gate_multiplier
 
         return msg
 
