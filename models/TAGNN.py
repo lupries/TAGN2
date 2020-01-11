@@ -42,8 +42,20 @@ class TAGNN_batch(nn.Module):
           new_edge_index = torch.cat((new_edge_index,edge_index + torch.ones_like(edge_index) * i * frames),dim=1)
         deeplab = models.segmentation.deeplabv3_resnet50(pretrained=False)
         self.backbone = deeplab.backbone
-        self.graph = AGNN(loops=loops, channels=2048, num_nodes=frames, edge_index=new_edge_index.cuda())
-        self.readout = models.segmentation.deeplabv3.DeepLabHead(2*2048, num_classes=1)
+        self.deeplabhead = models.segmentation.deeplabv3.DeepLabHead(2048, num_classes=1)
+        self.ASPP     = nn.Sequential(
+            self.deeplabhead[0],
+            self.deeplabhead[1],
+            self.deeplabhead[2],
+            self.deeplabhead[3]
+        )
+        self.graph = AGNN(loops=loops, channels=256, num_nodes=frames, edge_index=new_edge_index.cuda())
+        self.classifier = nn.Sequential(
+            nn.Conv2d(256*2, 256, kernel_size=3, padding=1, bias = False),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            self.deeplabhead[4]
+        )
 
     def forward(self, x):
 
@@ -54,6 +66,7 @@ class TAGNN_batch(nn.Module):
         frames = x.shape[1]
         for frame in range(frames):
           frame_feature = self.backbone(x[:,frame])['out']
+          frame_feature = self.ASPP(frame_feature)
           frame_feature = frame_feature.unsqueeze(1)
           features = torch.cat((features, frame_feature),dim=1)
         batch, frames, channel, height, width = features.shape
@@ -67,7 +80,7 @@ class TAGNN_batch(nn.Module):
         x = torch.cat((x,features),dim=2)
         out = torch.Tensor().cuda()
         for frame in range(frames):
-          frame_out = self.readout(x[:,frame])
+          frame_out = self.classifier(x[:,frame])
           frame_out = F.interpolate(frame_out, size=input_shape, mode='bilinear', align_corners=False)
           out = torch.cat((out,frame_out),dim=1)
 
