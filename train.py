@@ -192,3 +192,47 @@ def show_results_img(model, dataloader, number):
       counter += 1
       if counter >= max_count:
         return
+
+
+def show_results_graph(model, dataloader, number):
+  model.eval()
+  device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+  counter = 0
+  max_count = int(number/dataloader.batch_size)
+  for sample in dataloader:
+    inputs = sample['image'].to(device)
+    masks = sample['mask'].to(device)
+    with torch.set_grad_enabled(False):
+      outputs = model(inputs)
+      y_pred = outputs.data.cpu().numpy()
+      y_pred_1 = model.node_states[0].cpu().numpy()
+      y_pred_2 = model.node_states[1].cpu().numpy()
+      y_true = masks.data.cpu().numpy()
+      images = inputs.cpu().numpy()
+      for i in range(dataloader.batch_size):
+        for j in range(dataloader.batch_size):
+          image = images[i,j]
+          mask_pred = y_pred[i,j]
+          mask_pred_1 = y_pred_1[i,j]
+          mask_pred_2 = y_pred_2[i,j]
+          mask = y_true[i,j]
+          print(np.max(image[1,:,:]), np.min(mask_pred))
+          print(np.max(mask), np.min(mask))
+          print(image.shape,mask_pred.shape,mask.shape)
+          plt.subplot(3,5,1+j*5)
+          plt.imshow(image.transpose(1,2,0))
+          plt.subplot(3,5,2+j*5)
+          mask_pred_1 = 1.0/(1+np.exp(-mask_pred_1))
+          plt.imshow(mask_pred_1>0.5)
+          plt.subplot(3,5,3+j*5)
+          mask_pred_2 = 1.0/(1+np.exp(-mask_pred_2))
+          plt.imshow(mask_pred_2>0.5)
+          plt.subplot(3,5,4+j*5)
+          mask_pred = 1.0/(1+np.exp(-mask_pred))
+          plt.imshow(mask_pred>0.5)
+          plt.subplot(3,5,5+j*5)
+          plt.imshow(mask>0)
+        plt.show(block=True)
+      counter += 1
+      if counter >= max_count:
+        return
