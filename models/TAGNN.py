@@ -141,15 +141,18 @@ class TAGNN_batch(nn.Module):
         print("node: "+str(node1_flat.shape)+" mask: "+str(mask1_flat.shape))
         x = self.graph.interAttention.W_c(node1_flat)
         x = torch.bmm(x, node2_flat)
+        soft_att = x
         x = self.graph.interAttention.activation(x)
         out = torch.zeros(batch,width*height)
+        out_soft = torch.zeros(batch,width*height)
         for i in range(batch):
           #out[i] = torch.sum(x[i][mask1_flat[i]>0],dim=0)
-          out[i] = torch.sum((x[i][mask1_flat[i]>0])[90:100],dim=0)
-          mask_add = torch.zeros_like(mask1_flat[i]>0)
-          mask_add[90:100] = torch.ones(10).cuda()
+          out[i] = torch.sum((x[i][mask1_flat[i]>0])[40:50],dim=0)
+          out_soft[i] = torch.sum((soft_att[i][mask1_flat[i]>0])[40:50],dim=0)
+          mask_add = torch.zeros_like(mask1_flat[i][mask1_flat[i]>0])
+          mask_add[40:50] = torch.ones_like(mask_add[40:50])
           mask1_flat[i][mask1_flat[i]>0] += mask_add
         
-        return {'attention': out.view(batch, height, width), 'focus': mask1_flat.view(batch, height, width)}
+        return {'attention': out.view(batch, height, width), 'focus': mask1_flat.view(batch, height, width), 'soft_attention': out_soft.view(batch, height, width)}
 
 
