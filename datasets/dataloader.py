@@ -64,7 +64,9 @@ class SegDataset(Dataset):
                             new_image_names.append(image_names[elem + frame * step])
                             new_mask_names.append(mask_names[elem + frame * step])
                     else:
-                        break
+                        for frame in range(batch_size):
+                            new_image_names.append(image_names[elem + frame*step - len(image_names)])
+                            new_mask_names.append(mask_names[elem + frame*step - len(image_names)])
                 self.image_names += new_image_names
                 self.mask_names += new_mask_names
             if subset is not 'val':
