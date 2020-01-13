@@ -2,6 +2,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torchvision import models
 import torch
+from torchvision import transforms
 
 from .graphnet import AGNN
 from .graphnet import create_fully_connected
@@ -113,4 +114,45 @@ class TAGNN_batch(nn.Module):
           frame_out = F.interpolate(frame_out, size=input_shape, mode='bilinear', align_corners=False)
           out = torch.cat((out,frame_out),dim=1)
         return out
+
+    def get_attention_map(self, x, mask):
+        
+        input_shape = x.shape[-2:]
+        frames = x.shape[1]
+        
+        # backbone (feature extraction)
+        features = self.encode(x,frames)
+        
+        # flatten batches for graph
+        batch, frames, channel, height, width = features.shape
+
+        node1 = features[:,0]
+        node2 = features[:,1]
+
+        resize = transforms.Resize((height,width))
+        toPIL = transforms.ToPILImage()
+        toTensor = transforms.ToTensor()
+        mask1 = toTensor(resize(toPIL(mask[:,0].cpu()))).cuda()
+        print(mask1.shape)
+                
+        node1_flat = node1.view(batch, -1, width*height).permute(0,2,1)
+        node2_flat = node2.view(batch, -1, width*height)
+        mask1_flat = mask1.view(batch, width*height)
+        print("node: "+str(node1_flat.shape)+" mask: "+str(mask1_flat.shape))
+        x = self.graph.interAttention.W_c(node1_flat)
+        x = torch.bmm(x, node2_flat)
+        soft_att = x
+        x = self.graph.interAttention.activation(x)
+        out = torch.zeros(batch,width*height)
+        out_soft = torch.zeros(batch,width*height)
+        for i in range(batch):
+          #out[i] = torch.sum(x[i][mask1_flat[i]>0],dim=0)
+          out[i] = torch.sum((x[i][mask1_flat[i]>0])[40:50],dim=0)
+          out_soft[i] = torch.sum((soft_att[i][mask1_flat[i]>0])[40:50],dim=0)
+          mask_add = torch.zeros_like(mask1_flat[i][mask1_flat[i]>0])
+          mask_add[40:50] = torch.ones_like(mask_add[40:50])
+          mask1_flat[i][mask1_flat[i]>0] += mask_add
+        
+        return {'attention': F.interpolate(out.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False), 'focus': F.interpolate(mask1_flat.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False), 'soft_attention': F.interpolate(out_soft.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False)}
+
 
