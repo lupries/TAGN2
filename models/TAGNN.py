@@ -147,12 +147,12 @@ class TAGNN_batch(nn.Module):
         out_soft = torch.zeros(batch,width*height)
         for i in range(batch):
           #out[i] = torch.sum(x[i][mask1_flat[i]>0],dim=0)
-          out[i] = torch.sum((x[i][mask1_flat[i]>0])[40:50],dim=0)
-          out_soft[i] = torch.sum((soft_att[i][mask1_flat[i]>0])[40:50],dim=0)
+          out[i] = torch.sum((x[i][mask1_flat[i]>0])[100:102],dim=0)
+          out_soft[i] = torch.sum((soft_att[i][mask1_flat[i]>0])[100:102],dim=0)
           mask_add = torch.zeros_like(mask1_flat[i][mask1_flat[i]>0])
-          mask_add[40:50] = torch.ones_like(mask_add[40:50])
-          mask1_flat[i][mask1_flat[i]>0] += mask_add
+          mask_add[100:102] = torch.ones_like(mask_add[100:102])
+          mask1_flat[i][mask1_flat[i]>0] = mask_add
         
-        return {'attention': F.interpolate(out.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False), 'focus': F.interpolate(mask1_flat.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False), 'soft_attention': F.interpolate(out_soft.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False)}
+        return {'attention': F.interpolate(out.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False).squeeze(1), 'focus': F.interpolate(mask1_flat.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False).squeeze(1), 'soft_attention': F.interpolate(out_soft.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False).squeeze(1)}
 
 
