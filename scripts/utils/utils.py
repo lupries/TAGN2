@@ -39,7 +39,7 @@ def generate_masks(model, root_dir, target_dir, imageFolder, img_size, batch_siz
                 for j in range(batch_size):
                     if i + j > int(len(image_names) / batch_size):
                        break
-                    image = cv2.imread(image_names[i + j], 1).transpose(2, 0, 1)
+                    image = cv2.imread(image_names[i*batch_size + j], 1).transpose(2, 0, 1)
                     image_dict = {'image': image, 'mask': image}
                     image_dict = transform(image_dict)
                     batch[0, j] = image_dict['image']
