@@ -58,7 +58,8 @@ class TAGNN_batch(nn.Module):
         )
         self.graph = AGNN(loops=loops, channels=256, num_nodes=frames, edge_index=new_edge_index.cuda())
         self.classifier = nn.Sequential(
-            nn.Conv2d(256*2, 256, kernel_size=3, padding=1, bias = False),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256*2, 256, kernel_size=1, padding=1, bias = False),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             self.deeplabhead[4]
