@@ -157,3 +157,27 @@ class TAGNN_batch(nn.Module):
         return {'attention': F.interpolate(out.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False).squeeze(1), 'focus': F.interpolate(mask1_flat.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False).squeeze(1), 'soft_attention': F.interpolate(out_soft.view(batch, height, width).unsqueeze(1), size=input_shape, mode='bilinear', align_corners=False).squeeze(1)}
 
 
+    def get_features(self, x, mask):
+        
+        input_shape = x.shape[-2:]
+        frames = x.shape[1]
+        
+        # backbone (feature extraction)
+        features = self.encode(x,frames)
+        
+        # flatten batches for graph
+        batch, frames, channel, height, width = features.shape
+
+        node1 = features[:,0]
+        node2 = features[:,1]
+
+        resize = transforms.Resize((height,width))
+        toPIL = transforms.ToPILImage()
+        toTensor = transforms.ToTensor()
+        mask1 = toTensor(resize(toPIL(mask[:,0].cpu()))).cuda()
+                
+        node1_flat = node1.view(batch, -1, width*height).permute(0,2,1)
+        node2_flat = node2.view(batch, -1, width*height)
+        mask1_flat = mask1.view(batch, width*height)
+                
+        return {'feature': node1_flat, 'mask': mask1_flat}
